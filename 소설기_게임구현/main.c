@@ -3,8 +3,6 @@
 #include <time.h>
 #include <conio.h>
 #include "map1.h"
-#include "map2.h"
-
 //Color
 #define RED 4
 #define BLUE 1
@@ -19,7 +17,7 @@
 //Key
 #define RIGHT 77
 #define LEFT 75
-#define DOWN 120
+#define DOWN 80
 #define REVERSE_RIGHT 75
 #define REVERSE_LEFT 77
 #define REVERSE_DOWN 72
@@ -29,182 +27,415 @@
 #define GBOARD_ORIGIN_X 8
 #define GBOARD_ORIGIN_Y 10
 
+COORD PC;
+int PC_map1;
 int row = 40;
 int col = 30;
 int interval = 5;
 int BlockRow_Cnt = 0;
 int player_Life = 3;
-char obtainAlphabet[7];	//PC가 먹은 글자
+char obtainAlphabet[7];   //PC가 먹은 글자
 int mobSpeed = 50;
 int blockSpeed = 50;
 COORD curPos;
 int item_ID;
 int colorOfPC = 6;
 
+int speed = 10;
+
+void RemoveCursor(void)
+{
+    CONSOLE_CURSOR_INFO curInfo;
+    GetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &curInfo);
+    curInfo.bVisible = 0;
+    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &curInfo);
+}
 void SetCurrentCursorPos(int x, int y)
 {
-	COORD position = { x, y };
-	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), position);
+    COORD position = { x, y };
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), position);
 }
 COORD GetCurrentCursorPos(void)
 {
-	COORD curPoint;
-	CONSOLE_SCREEN_BUFFER_INFO curInfo;
+    COORD curPoint;
+    CONSOLE_SCREEN_BUFFER_INFO curInfo;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &curInfo);
+    curPoint.X = curInfo.dwCursorPosition.X;
+    curPoint.Y = curInfo.dwCursorPosition.Y;
 
-	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &curInfo);
-	curPoint.X = curInfo.dwCursorPosition.X;
-	curPoint.Y = curInfo.dwCursorPosition.Y;
-
-	return curPoint;
+    return curPoint;
 }
 void DrawGameBlock()
 {
-	int y, x;
-	SetCurrentCursorPos(10, 10);
-	curPos = GetCurrentCursorPos();
+    int y, x;
+    SetCurrentCursorPos(GBOARD_ORIGIN_X + 2, GBOARD_ORIGIN_Y);
+    curPos = GetCurrentCursorPos();
+    for (y = 0; y < 40; y++)
+    {
+        for (x = 0; x < 30; x++)
+        {
+            SetCurrentCursorPos(curPos.X + x * 2, curPos.Y + y);
+            if (map1[y][x] == 0)
+            {
+                printf("  ");
+            }
+            else if (map1[y][x] == 1)
+            {
+                SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), RED);
+                printf("■");
+            }
+            else if (map1[y][x] == 2)
+            {
+                SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), BLUE);
+                printf("■");
+            }
+            else if (map1[y][x] == 3)
+            {
+                SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), GREEN);
+                printf("■");
+            }
+            else if (map1[y][x] == 4)
+            {
+                SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), YELLOW);
+                printf("■");
+            }
+            else if (map1[y][x] == 5)
+            {
+                SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 8);
+                printf("§");
+            }
+            else if (map1[y][x] == 6)
+            {
+                SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), colorOfPC);
+                PC = GetCurrentCursorPos();
 
-	for (y = 0; y < 40; y++)
-	{
-		for (x = 0; x < 30; x++)
-		{
-			SetCurrentCursorPos(curPos.X + x * 2, curPos.Y + y);
-			if (map1[y][x] == 0)
-			{
-				printf("  ");
-			}
-			else if (map1[y][x] == 1)
-			{
-				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), RED);
-				printf("■");
-			}
-			else if (map1[y][x] == 2)
-			{
-				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), BLUE);
-				printf("■");
-			}
-			else if (map1[y][x] == 3)
-			{
-				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), GREEN);
-				printf("■");
-			}
-			else if (map1[y][x] == 4)
-			{
-				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), YELLOW);
-				printf("■");
-			}
-			else if (map1[y][x] == 5)
-			{
-				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 8);
-				printf("§");
+                printf("♨");
 
-			}
-			else if (map1[y][x] == 6)
-			{
-				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 11);
-				printf("♨");
+            }
+            else if (map1[y][x] == 7)
+            {
+                SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 13);
+                printf("■");
+            }
+        }
+    }
 
-			}
-			else if (map1[y][x] == 7)
-			{
-				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 13);
-				printf("■");
-			}
-		}
-	}
-	SetCurrentCursorPos(curPos.X, curPos.Y);
+    //SetCurrentCursorPos(curPos.X, curPos.Y);
 }
-void ElementPrint()
+void DrawGameBlock_init()
 {
-	int x, y;
-	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
-	SetCurrentCursorPos(10, 10);
-	curPos = GetCurrentCursorPos();
+    int y, x;
+    SetCurrentCursorPos(GBOARD_ORIGIN_X + 2, GBOARD_ORIGIN_Y);
+    curPos = GetCurrentCursorPos();
+    for (y = 0; y < 40; y++)
+    {
+        for (x = 0; x < 30; x++)
+        {
+            SetCurrentCursorPos(curPos.X + x * 2, curPos.Y + y);
+            if (map1_init[y][x] == 0)
+            {
+                printf("  ");
+            }
+            else if (map1_init[y][x] == 1)
+            {
+                SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), RED);
+                printf("■");
+            }
+            else if (map1_init[y][x] == 2)
+            {
+                SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), BLUE);
+                printf("■");
+            }
+            else if (map1_init[y][x] == 3)
+            {
+                SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), GREEN);
+                printf("■");
+            }
+            else if (map1_init[y][x] == 4)
+            {
+                SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), YELLOW);
+                printf("■");
+            }
+            else if (map1_init[y][x] == 5)
+            {
+                SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 8);
+                printf("§");
+            }
+            else if (map1_init[y][x] == 6)
+            {
+                SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 11);
+                printf("♨");
+            }
+            else if (map1_init[y][x] == 7)
+            {
+                SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 13);
+                printf("■");
+            }
+        }
+    }
 
-	for (y = 0; y < 40; y++)
-	{
-		for (x = 0; x < 30; x++)
-		{
+    //SetCurrentCursorPos(curPos.X, curPos.Y);
+}
 
-			SetCurrentCursorPos(curPos.X + x * 2, curPos.Y + y);
-			if (element1[y][x] >= 'a' && element1[y][x] <= 'z')
-			{
-				printf("%c", element1[y][x]);
-			}
-		}
-	}
+void element1Print()
+{
+    int x, y;
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
+    SetCurrentCursorPos(GBOARD_ORIGIN_X + 2, GBOARD_ORIGIN_Y);
+    curPos = GetCurrentCursorPos();
+
+    for (y = 0; y < 40; y++)
+    {
+        for (x = 0; x < 30; x++)
+        {
+
+            SetCurrentCursorPos(curPos.X + x * 2, curPos.Y + y);
+            if (element1[y][x] >= 'a' && element1[y][x] <= 'z')
+            {
+                printf("%c", element1[y][x]);
+            }
+        }
+    }
 
 
-	SetCurrentCursorPos(curPos.X, curPos.Y);
+    SetCurrentCursorPos(curPos.X, curPos.Y);
+}
+void element1Print_init()//initialize 알파벳배열 출력
+{
+    int x, y;
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
+    SetCurrentCursorPos(GBOARD_ORIGIN_X + 2, GBOARD_ORIGIN_Y);
+    curPos = GetCurrentCursorPos();
+
+    for (y = 0; y < 40; y++)
+    {
+        for (x = 0; x < 30; x++)
+        {
+
+            SetCurrentCursorPos(curPos.X + x * 2, curPos.Y + y);
+            if (element1[y][x] >= 'a' && element1[y][x] <= 'z')
+            {
+                printf("%c", element1[y][x]);
+            }
+        }
+    }
+
+    SetCurrentCursorPos(curPos.X, curPos.Y);
 }
 void CurrentSituationPrint()
 {
-	int i = 30;
-	SetCurrentCursorPos(80, i++);
-	printf("WORD THAT MUST ACQUIRE : duck");
-	SetCurrentCursorPos(80, i++);
-	printf("LETTERS ACQUIRED : ");
-	puts(obtainAlphabet);
-	SetCurrentCursorPos(80, i++);
-	printf("LIFE COUNT : %d", player_Life);
-	SetCurrentCursorPos(80, i++);
-	printf("--------------------------");
-	SetCurrentCursorPos(80, i++);
-	printf("<KEY MANUAL>");
-	SetCurrentCursorPos(80, i++);
-	printf("Right key : 오른쪽으로 이동");
-	SetCurrentCursorPos(80, i++);
-	printf("Left key : 왼쪽으로 이동");
-	SetCurrentCursorPos(80, i++);
-	printf("Down key : 포털 이동 및 블록 삭제");
-	SetCurrentCursorPos(80, i++);
-	printf("MOB : §");
-	SetCurrentCursorPos(100, i++);
+    int i = 30;
+    SetCurrentCursorPos(80, i++);
+    printf("WORD THAT MUST ACQUIRE : duck");
+    SetCurrentCursorPos(80, i++);
+    printf("LETTERS ACQUIRED : ");
+    puts(obtainAlphabet);
+    SetCurrentCursorPos(80, i++);
+    printf("LIFE COUNT : %d", player_Life);
+    SetCurrentCursorPos(80, i++);
+    printf("--------------------------");
+    SetCurrentCursorPos(80, i++);
+    printf("<KEY MANUAL>");
+    SetCurrentCursorPos(80, i++);
+    printf("Right key : 오른쪽으로 이동");
+    SetCurrentCursorPos(80, i++);
+    printf("Left key : 왼쪽으로 이동");
+    SetCurrentCursorPos(80, i++);
+    printf("Down key : 포털 이동 및 블록 삭제");
+    SetCurrentCursorPos(80, i++);
+    printf("MOB : §");
+    SetCurrentCursorPos(100, i++);
 }
+
+
 void DrawGameBoard()
 {
-	int  x, y;
+    int  x, y;
+    for (y = 0; y <= GBOARD_HEIGHT; y++)
+    {
+        SetCurrentCursorPos(GBOARD_ORIGIN_X + 2, GBOARD_ORIGIN_Y + y);
+        if (y == GBOARD_HEIGHT)
+            printf("└");
+        else
+            printf("│");
+    }
+    for (x = 1; x < GBOARD_WIDTH - 2; x++)
+    {
+        SetCurrentCursorPos(GBOARD_ORIGIN_X + x * 2 + 2, GBOARD_ORIGIN_Y + GBOARD_HEIGHT);
+        printf("─");
+    }
+    for (y = 0; y <= GBOARD_HEIGHT; y++)
+    {
+        SetCurrentCursorPos(GBOARD_ORIGIN_X + GBOARD_WIDTH * 2 - 2, GBOARD_ORIGIN_Y + y);
+        if (y == GBOARD_HEIGHT)
+            printf("┘");
+        else
+            printf("│");
+    }
 
-	for (y = 0; y <= GBOARD_HEIGHT; y++)
-	{
-		SetCurrentCursorPos(GBOARD_ORIGIN_X, GBOARD_ORIGIN_Y + y);
-		if (y == GBOARD_HEIGHT)
-			printf("└");
-		else
-			printf("I");
-	}
+    SetCurrentCursorPos(GBOARD_WIDTH, 0);
+    DrawGameBlock(map1);
+}
 
-	for (x = 0; x < GBOARD_WIDTH - 2; x++)
-	{
-		SetCurrentCursorPos(GBOARD_ORIGIN_X + x * 2 + 2, GBOARD_ORIGIN_Y + GBOARD_HEIGHT);
-
-		printf("─");
-	}
+void StoryTelling()
+{
+    printf("옛날옛적에 윙가드리오마을 숲속에 동물친구들이 옹기종기 살고 있었어요~ \n하지만 어느날...\n악랄한 수라고동사이정이 나타나\n동물 친구들의 이름을 빼앗아 가버렸어요\n이제 우리는 친구들을 부를 수 가 없어요ㅠㅠ\n여러분이 제 친구들의 이름을 찾아주세요!!!!\n");
+}
 
 
-	for (y = 0; y <= GBOARD_HEIGHT; y++)
-	{
-		SetCurrentCursorPos(GBOARD_ORIGIN_X + GBOARD_WIDTH * 2 - 2, GBOARD_ORIGIN_Y + y);
-		if (y == GBOARD_HEIGHT)
-			printf("┘");
-		else
-			printf("I");
-	}
+void initialize()
+{
+    DrawGameBlock_init();
+    element1Print_init();
 
-	SetCurrentCursorPos(GBOARD_WIDTH, 0);
 }
 void DrawStage()
 {
-	DrawGameBlock();
-	CurrentSituationPrint();
-	ElementPrint();
+    DrawGameBlock();
+    CurrentSituationPrint();
+    //element1Print();
 }
+
+void ShiftRight()
+{
+    //move right
+    if (map1[PC.Y - GBOARD_ORIGIN_Y + 1][(PC.X - GBOARD_ORIGIN_X) / 2] != 0)
+    {
+        map1[PC.Y - GBOARD_ORIGIN_Y][(PC.X - GBOARD_ORIGIN_X) / 2 - 1] = 0;
+        PC.X += 2;
+        SetCurrentCursorPos(PC.X, PC.Y);
+
+        map1[PC.Y - GBOARD_ORIGIN_Y][(PC.X - GBOARD_ORIGIN_X) / 2 - 1] = 6;
+        DrawStage();
+    }
+    // check color and then, if color == blockcolor -> movedown
+    int arrCurX_PC = (PC.X - GBOARD_ORIGIN_X) / 2 - 1;
+    int arrCurY_PC = (PC.Y - GBOARD_ORIGIN_Y);
+
+    while (!DetectCollisionPCWithBlock())
+    {
+        map1[arrCurY_PC][arrCurX_PC] = 0;
+        map1[arrCurY_PC + 1][arrCurX_PC] = 6;
+        PC.Y += 1; arrCurY_PC++;
+        DrawStage();
+    }
+}
+
+//왼쪽이동
+void ShiftLeft()
+{
+    //move left
+    if (map1[PC.Y - GBOARD_ORIGIN_Y + 1][(PC.X - GBOARD_ORIGIN_X) / 2 - 2] != 0)
+    {
+        map1[PC.Y - GBOARD_ORIGIN_Y][(PC.X - GBOARD_ORIGIN_X) / 2 - 1] = 0;
+        PC.X -= 2;
+        SetCurrentCursorPos(PC.X, PC.Y);
+
+        map1[PC.Y - GBOARD_ORIGIN_Y][(PC.X - GBOARD_ORIGIN_X) / 2 - 1] = 6;
+        DrawStage();
+    }
+    // check color and then, if color == blockcolor -> movedown
+    int arrCurX_PC = (PC.X - GBOARD_ORIGIN_X) / 2 - 1;
+    int arrCurY_PC = (PC.Y - GBOARD_ORIGIN_Y);
+    while (!DetectCollisionPCWithBlock())
+    {
+        map1[arrCurY_PC][arrCurX_PC] = 0;
+        map1[arrCurY_PC + 1][arrCurX_PC] = 6;
+        PC.Y += 1; arrCurY_PC++;
+        DrawStage();
+    }
+
+}
+
+int DetectCollisionPCWithBlock()
+{
+    int arrCurX, arrCurY;
+    int UnderBlock_Info;
+    arrCurX = (PC.X - GBOARD_ORIGIN_X) / 2 - 1;
+    arrCurY = (PC.Y - GBOARD_ORIGIN_Y);
+    UnderBlock_Info = map1[arrCurY + 1][arrCurX] % 10; // array value
+    if (colorOfPC == detectColor(UnderBlock_Info) || UnderBlock_Info == 0)
+        return 0;
+    else
+        return 1;
+}
+//블록 하강
+void PlayerDown()
+{
+    int arrCurX_PC, arrCurY_PC;
+    int tmp_COLOR;
+    int playerdownBlock_COLOR;
+    arrCurX_PC = (PC.X - GBOARD_ORIGIN_X) / 2 - 1;
+    arrCurY_PC = (PC.Y - GBOARD_ORIGIN_Y);
+    tmp_COLOR = map1[arrCurY_PC + 1][arrCurX_PC] % 10;
+    //if (tmp_COLOR) // if downblock is none
+    //   return;
+    if (detectColor(tmp_COLOR) == 0)
+        return;
+    else
+        colorOfPC = detectColor(tmp_COLOR);
+
+    while (!DetectCollisionPCWithBlock())
+    {
+        map1[arrCurY_PC][arrCurX_PC] = 0;
+        map1[arrCurY_PC + 1][arrCurX_PC] = 6;
+        PC.Y += 1; arrCurY_PC++;
+        DrawStage();
+    }
+    //printf("-end");
+}
+int detectColor(int color_of_array)
+{
+    if (color_of_array == 1)
+        return 4;
+    else if (color_of_array == 2)
+        return 1;
+    else if (color_of_array == 3)
+        return 2;
+    else if (color_of_array == 4)
+        return 6;
+    else
+        return 0;
+}
+
+void ProcessKeyInput()
+{
+    for (int i = 0; i < 20; i++)
+    {
+        if (_kbhit() != 0)
+        {
+            int key = _getch();
+            switch (key)
+            {
+            case LEFT:
+                ShiftLeft();
+                break;
+            case RIGHT:
+                ShiftRight();
+                break;
+            case DOWN:
+                PlayerDown();
+                break;
+
+            }
+        }
+        Sleep(speed);//만약 더 빠르게 하고싶으면 speed를 작게한다
+    }
+}
+
 int main()
 {
-	int N = 40;
+    RemoveCursor();
 
-	DrawStage();
+    //StoryTelling();
+    //Sleep(10000);
+    DrawGameBoard();
+    DrawStage();
 
-	SetCurrentCursorPos(100, 100);
+    while (1)
+    {
+        ProcessKeyInput();
+    }
 
-	return 0;
+
 }
